@@ -1,7 +1,8 @@
 #!/usr/local/plt/bin/mzscheme
 #lang scheme/base
 
-(require scheme/match
+(require scheme/cmdline
+         scheme/match
          scheme/pretty
          planet/util
          srfi/1/list
@@ -17,21 +18,7 @@
 
 ; Utility procedures ---------------------------
 
-;; system/output : string string ... -> string
-;;
-;; Executes a shell command and returns the content of standard out.
-;;
-;; Raises exn:fail if the command had a non-zero exit status.
-;(define (system/output cmd . args)
-;  (define output (open-output-string))
-;  (parameterize ([current-output-port output])
-;    (if (apply system* cmd args)
-;        (begin0 (get-output-string output)
-;                (close-output-port output))
-;        (begin (close-output-port output)
-;               (error "Command failed" cmd args)))))
-
-;; accumulate-directories : complete-path (listof string) integer -> (list-of (listof string))
+; complete-path (listof string) integer -> (list-of (listof string))
 (define (accumulate-directories root relative depth)
   (define current (apply build-path root relative))
   (cond [(not (directory-exists? current))
@@ -44,7 +31,7 @@
                     null      
                     (directory-list current))]))
 
-;; directory->add-arguments : path (list string string string string) -> (list path string string null integer integer)
+; path (list string string string string) -> (list path string string null integer integer)
 (define directory->add-arguments
   (match-lambda* 
     [(list root (list owner package major minor))
@@ -62,56 +49,59 @@
                        (string->number minor)
                        (build-path root owner package major minor))])]))
 
-;; hard-link-spec->remove-arguments : (list path string string null integer integer) -> (list string string integer integer)
+; (list path string string null integer integer) -> (list string string integer integer)
 (define hard-link-spec->remove-arguments
   (match-lambda
     [(list _ owner package _ major minor)
      (list owner package major minor)]))
 
-;; string string integer integer -> void
+; string string integer integer -> void
 (define (remove-hard-link* . args)
   (with-handlers ([exn? void])
     (apply remove-hard-link args)))
 
 ; Main -----------------------------------------
 
-; argv : (vectorof string)
-(define argv
-  (current-command-line-arguments))
+(let ([root (or (getenv "AUTOPLANET") #f)] ; (U complete-path #f)
+      [interactive? #f] ; boolean
+      [verbose? #f]) ; boolean
 
-; root : complete-path
-(define root
-  (cond [(not (zero? (vector-length argv)))
-         (path->complete-path (build-path (vector-ref argv 0)))]
-        [(getenv "AUTOPLANET")
-         (path->complete-path (build-path (getenv "AUTOPLANET")))]
-        [else (error "Please specify the root directory you wish to scan.")]))
+  (command-line 
+   #:program "autoplanet"
+   #:once-each
+   [("-i" "--interactive") 
+    "Run in interactive mode."
+    (set! interactive? #t)
+    (set! verbose? #t)]
+   [("-v" "--verbose")
+    "Run in verbose mode."
+    (set! verbose? #t)]
+   [("-d" "--directory")
+    dir
+    "Specify source directory (defaults to $AUTOPLANET)."
+    (set! root (path->complete-path (build-path dir)))])
+  
+  (cond [(not root)                     (error "Please specify a source directory, either on the command line or using $AUTOPLANET.")]
+        [(not (directory-exists? root)) (error "Source directory does not exist:" (path->string root))])
+  
+  (let ([remove-arguments (map hard-link-spec->remove-arguments       ; (listof (list string string integer integer))
+                               (get-hard-linked-packages))]
+        [add-arguments    (map (cut directory->add-arguments root <>) ; (listof (list string string integer integer path))
+                               (accumulate-directories root null 4))])
 
-(unless (directory-exists? root)
-  (error "The root you specified is not a directory:" (path->string root)))
+    (when verbose?
+      (printf "===== AUTOPLANET =====~n")
+      (printf "~nThe following development links will be removed:~n")
+      (for-each (cut printf "    ~s~n" <>) remove-arguments)
+      (printf "~nThe following development links will be added:~n")
+      (for-each (cut printf "    ~s~n" <>) add-arguments)
+      (printf "~n"))
 
-;; remove-arguments : (listof (list string string integer integer))
-(define remove-arguments
-  (map hard-link-spec->remove-arguments
-       (get-hard-linked-packages)))
-
-;; add-arguments : (listof (list string string integer integer path))
-(define add-arguments
-  (map (cut directory->add-arguments root <>)
-       (accumulate-directories root null 4)))
-
-(printf "===== AUTOPLANET =====~n")
-
-(printf "~nThe following development links will be removed:~n")
-(for-each (cut printf "    ~s~n" <>) remove-arguments)
-
-(printf "~nThe following development links will be added:~n")
-(for-each (cut printf "    ~s~n" <>) add-arguments)
-
-(printf "~nProceed [y/n]? ")
-
-(if (member (read-line) '("y" "yes" "Y" "YES" "Yes"))
-    (begin (for-each (cut apply remove-hard-link* <>) remove-arguments)
-           (for-each (cut apply add-hard-link <>) add-arguments)
-           (printf "Done~n"))
-    (begin (printf "Cancelled~n")))
+    (if (or (not interactive?)
+            (begin (printf "Proceed [y/n]? ")
+                   (member (read-line) '("y" "yes" "Y" "YES" "Yes"))))
+        (begin (for-each (cut apply remove-hard-link* <>) remove-arguments)
+               (for-each (cut apply add-hard-link <>) add-arguments)
+               (when verbose?
+                 (printf "Done~n")))
+        (begin (printf "Cancelled~n")))))
