@@ -6,9 +6,6 @@
          "svn.ss")
 
 ; -> void
-(define remove-all unlink-all)
-
-; -> void
 (define (remove-hard-links)
   (for ([spec (get-hard-linked-packages)])
     (match spec
@@ -36,7 +33,6 @@
          delete-autoplanet-root)
 
 (provide/contract
- [remove-all        (-> void?)]
  [remove-hard-links (-> void?)]
  [install-planet    (-> string? string? natural-number/c natural-number/c void?)]
  [install-local     (-> string? string? natural-number/c natural-number/c (or/c path? string?) void?)]
