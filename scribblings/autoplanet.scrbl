@@ -28,9 +28,7 @@ Here is an example:
   (install-local "untyped" "mirrors.plt" 2 0
                  "~/untyped/opensource/unlib/trunk/src")
 
-  (code:comment "Install an old version of an unpublished package in SVN")
-  (code:comment "(the package is staged in a local cache in ~/autoplanet):")
-  (autoplanet-root (expand-user-path "~/autoplanet"))
+  (code:comment "Install an old version of an unpublished package in SVN:")
   (make-autoplanet-root)
   (install-svn "untyped" "smoke.plt" 1 0
                "http://svn.untyped.com/smoke/trunk/src" 60)]
