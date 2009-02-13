@@ -10,21 +10,26 @@
   (for ([spec (get-hard-linked-packages)])
     (match spec
       [(list _ owner package _ major minor)
-       (remove-hard-link owner package major minor)])))
+       (remove-hard-link owner package major minor)]))
+  (void))
 
 ; string string natural natural -> void
-(define install-planet download/install-pkg)
+(define (install-planet owner package major minor)
+  (download/install-pkg owner package major minor)
+  (void))
 
 ; string string natural natural (U path string) -> void
 (define (install-local owner package major minor path)
   (let ([path (expand-user-path (if (path? path) path (string->path path)))])
     (if (absolute-path? path)
         (add-hard-link owner package major minor path)
-        (error "path not absolute" path))))
+        (error "path not absolute" path)))
+  (void))
 
 ; string string natural natural string (U natural 'head) -> void
 (define (install-svn owner package major minor url [revision 'head])
-  (install-local owner package major minor (svn-update url revision)))
+  (install-local owner package major minor (svn-update url revision))
+  (void))
 
 ; Provide statements -----------------------------
 

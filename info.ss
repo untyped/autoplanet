@@ -8,7 +8,7 @@
   '("Quick configuration of PLaneT development links."))
 
 (define release-notes
-  '((p "Initial release.")))
+  '((p "Fixed broken contract on " (tt "intall-planet") ".")))
 
 (define scribblings
   '(("scribblings/autoplanet.scrbl" (multi-page))))
