@@ -8,7 +8,7 @@
   '("Quick configuration of PLaneT development links."))
 
 (define release-notes
-  '((p "Fixed broken contract on " (tt "install-planet") ".")))
+  '((p "Removed Unlib dependency and added " (tt "build.ss") ".")))
 
 (define scribblings
   '(("scribblings/autoplanet.scrbl" (multi-page))))
@@ -19,3 +19,6 @@
 (define categories            '(devtools))
 (define required-core-version "4.0")
 (define repositories          '("4.x"))
+
+(define compile-omit-paths
+  '("build.ss"))

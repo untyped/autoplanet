@@ -2,9 +2,11 @@
 
 (require "base.ss")
 
-(require (schemeunit-in [main text-ui]))
+(require (planet schematics/schemeunit:3)
+         (planet schematics/schemeunit:3/text-ui))
 
 ; Provide statements -----------------------------
 
-(provide (all-from-out "base.ss")
-         (schemeunit-out [main text-ui]))
+(provide (all-from-out (planet schematics/schemeunit:3)
+                       (planet schematics/schemeunit:3/text-ui)
+                       "base.ss"))
