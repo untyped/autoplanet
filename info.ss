@@ -21,4 +21,6 @@
 (define repositories          '("4.x"))
 
 (define compile-omit-paths
-  '("build.ss"))
+  '("build.ss"
+    "planet"
+    "planetdev"))
