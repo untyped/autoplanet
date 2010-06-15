@@ -3,7 +3,7 @@ Autoplanet
 
 Developed by Untyped.
 
-Quick configuration of [Racket][1] development links.
+Quick configuration of PLaneT development links in [Racket][1].
 
 Copyright 2006 to 2010 Untyped.
 
